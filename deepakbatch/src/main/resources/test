@@ -1,0 +1,111 @@
+package com.jcg.webservice;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+@Path("/hello")
+public class HelloWorldService {
+	
+	@Context
+	private UriInfo uriInfo;
+	private final String QUERY_PARAM_REGEX = "^\\?([\\w-]+(=[\\w.\\-:%+]*)?(&[\\w-]+(=[\\w.\\-:%+]*)?)*)?$";
+	private final Pattern pattern = Pattern.compile(QUERY_PARAM_REGEX,
+			Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE);
+	private final List<String> BROWSE_DETAILS_LIST = Arrays.asList("state", "city", "tx");
+
+
+	@GET
+	@Path("/directions/{id}")
+	public Response directions(@PathParam("id") String id) {
+		if (!uriInfo.getQueryParameters().keySet().isEmpty()) {
+			return Response.status(400).entity("invalid request").build();
+		}
+		return Response.status(200).entity(id).build();
+	}
+			
+	@GET
+	@Path("/browse/details")
+	public Response browseDetails(@QueryParam("state") String state, @QueryParam("city") String city,
+			@QueryParam("tx") String tx) {
+		boolean containsInvalidParam = false;
+		for (String queryParam : uriInfo.getQueryParameters().keySet()) {
+			if (!BROWSE_DETAILS_LIST.contains(queryParam)) {
+				containsInvalidParam = true;
+				break;
+			}
+		}
+		if (containsInvalidParam) {
+			return Response.status(400).entity("invalid request").build();
+		} else {
+			// invalid query string validation
+			String requestUrl = uriInfo.getRequestUri().toString();
+			String absoluetPath = uriInfo.getAbsolutePath().toString();
+			requestUrl = requestUrl.replace(absoluetPath, "");
+			if (requestUrl != null && !"".equals(requestUrl.trim())) {
+				Matcher matcher = pattern.matcher(requestUrl);
+				if (!matcher.find()) {
+					return Response.status(400).entity("invalid request").build();
+				}
+			}
+		}
+
+		String output = "<html> " + "<title>" + "Java WebService Example" + "</title>"
+				+ "<body><h1><div style='font-size: larger;'>"
+				+ "Hello <span style='text-transform: capitalize; color: green;'>" + state + city + tx
+				+ "</span></div></h1></body>" + "</html>";
+		return Response.status(200).entity(output).build();
+	}
+	 
+	@GET
+	@Path("/{name}")
+	public Response getMsg(@PathParam("name") String name) {
+		printUriInfo("getMsg");
+		String requestUrl = uriInfo.getRequestUri().toString();
+		String absoluetPath = uriInfo.getAbsolutePath().toString();
+	//	requestUrl = requestUrl.replace(absoluetPath, "");
+		 
+	        final Matcher matcher = pattern.matcher(requestUrl);
+	        
+	        if (matcher.find()) {
+	            System.out.println("Full match: " + matcher.group(0));
+	            
+	        }else {
+	        	  System.out.println("Not found");
+	        }
+		String output = "<html> " + "<title>" + "Java WebService Example" + "</title>"  + "<body><h1><div style='font-size: larger;'>"
+				+ "Hello <span style='text-transform: capitalize; color: green;'>" + name + "</span></div></h1></body>" + "</html>";
+		return Response.status(200).entity(output).build();
+	}
+	
+	
+	private void printUriInfo(String msg) {
+	      System.out.println("---------------");
+	      System.out.println(msg);
+	      System.out.println("-- UriInfo --");
+	      if (uriInfo == null) {
+	          System.out.println("UriInfo: " + uriInfo);
+	          return;
+	      }
+	      List<String> queryNamesSet = Arrays.asList("name","city","t");
+	      uriInfo.getQueryParameters().keySet().containsAll(queryNamesSet);
+	      System.out.println("absolutePath: " + uriInfo.getAbsolutePath());
+	      System.out.println("baseUri: " + uriInfo.getBaseUri());
+	      System.out.println("matchedResource: " + uriInfo.getMatchedResources());
+	      System.out.println("matchedUri: " + uriInfo.getMatchedURIs());
+	      System.out.println("path: " + uriInfo.getPath());
+	      System.out.println("pathParameters: " + uriInfo.getPathParameters());
+	      System.out.println("pathSegments: " + uriInfo.getPathSegments());
+	      System.out.println("queryParameters: " + uriInfo.getQueryParameters());
+	      System.out.println("requestUri: " + uriInfo.getRequestUri());
+	  }
+}
